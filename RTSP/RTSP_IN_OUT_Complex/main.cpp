@@ -5,7 +5,7 @@
 #include "gstnvdsmeta.h"
 
 int main(int argc, char *argv[]) {
-    GstElement *pipeline, *source, *depay, *sink;
+    GstElement *pipeline, *source, *depay, *pay,*sink;
     GstBus *bus;
     GstMessage *msg;
     GstStateChangeReturn ret;
@@ -26,9 +26,16 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    sink = gst_element_factory_make("autovideosink", "sink");
+    pay = gst_element_factory_make("rtph264pay", "pay");
+    if (!pay) {
+        g_printerr("Failed to create 'rtph264depay' element.\n");
+        return -1;
+    }
+
+
+    sink = gst_element_factory_make("udpsink", "sink");
     if (!sink) {
-        g_printerr("Failed to create 'autovideosink' element.\n");
+        g_printerr("Failed to create 'udpsink' element.\n");
         return -1;
     }
 
@@ -39,8 +46,17 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Set the static RTSP URI
-    g_object_set(G_OBJECT(source), "location", "rtsp://192.168.0.133/live", NULL);
+    // Scource
+    g_object_set(G_OBJECT(source), "location", "rtsp://192.168.2.219/live", NULL);
+
+    // Sink
+    g_object_set(G_OBJECT(sink), "host", "127.0.0.1", NULL);
+    g_object_set(G_OBJECT(sink), "port", 554, NULL);
+    g_object_set(G_OBJECT(sink), "auto-multicast", TRUE, NULL);
+    g_object_set(G_OBJECT(sink), "sync", TRUE, NULL);
+    g_object_set(G_OBJECT(sink), "async", FALSE, NULL);
+
+
 
     // Build the pipeline
     gst_bin_add_many(GST_BIN(pipeline), source, depay, sink, NULL);

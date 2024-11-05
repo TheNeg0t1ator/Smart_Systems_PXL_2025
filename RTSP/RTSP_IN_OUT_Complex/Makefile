@@ -1,6 +1,6 @@
-CUDA_VER?=10.2
+CUDA_VER ?= 10.2
 ifeq ($(CUDA_VER),)
-		$(error "CUDA_VER is not set")
+	$(error "CUDA_VER is not set")
 endif
 
 APP := deepstream-test3-app
@@ -18,19 +18,25 @@ endif
 
 SRCS := $(wildcard *.cpp)
 INCS := $(wildcard *.h)
-PKGS := gstreamer-1.0
+# Add gst-rtsp-server to the list of required packages
+PKGS := gstreamer-1.0 gstreamer-rtsp-server-1.0
 OBJS := $(SRCS:.cpp=.o)
 
+# Add include paths and GStreamer flags
 CFLAGS += -I../../../includes \
 					-I /usr/local/cuda-$(CUDA_VER)/include
 CFLAGS += $(shell pkg-config --cflags $(PKGS))
 
+# Add linking flags
 LIBS := $(shell pkg-config --libs $(PKGS))
 LIBS += -L/usr/local/cuda-$(CUDA_VER)/lib64/ -lcudart -lnvdsgst_helper -lm \
 				-L$(LIB_INSTALL_DIR) -lnvdsgst_meta -lnvds_meta \
 				-lcuda -Wl,-rpath,$(LIB_INSTALL_DIR)
 
+# Include paths for DeepStream headers
 CFLAGS += -I/opt/nvidia/deepstream/deepstream-$(NVDS_VERSION)/sources/includes
+
+# Library paths for DeepStream libraries
 LIBS += -L/opt/nvidia/deepstream/deepstream-$(NVDS_VERSION)/lib
 
 # Compile C++ files using g++
