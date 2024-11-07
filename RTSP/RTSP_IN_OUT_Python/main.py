@@ -28,6 +28,9 @@ class RTSPRelayServer(GstRtspServer.RTSPMediaFactory):
         encoder.set_property("tune", "zerolatency")
         pay.set_property("pt", 96)
 
+        # Connect the "pad-added" signal for the RTSP source
+        source.connect("pad-added", self.on_pad_added, depay)
+
         # Create the pipeline and add all elements
         pipeline = Gst.Pipeline.new("rtsp-pipeline")
         pipeline.add(source)
@@ -38,19 +41,26 @@ class RTSPRelayServer(GstRtspServer.RTSPMediaFactory):
         pipeline.add(pay)
 
         # Link elements together
-        source.connect("pad-added", self.on_pad_added, depay)
-        depay.link(decoder)
-        decoder.link(videobalance)
-        videobalance.link(encoder)
-        encoder.link(pay)
+        if not depay.link(decoder):
+            print("Failed to link depay to decoder")
+        if not decoder.link(videobalance):
+            print("Failed to link decoder to videobalance")
+        if not videobalance.link(encoder):
+            print("Failed to link videobalance to encoder")
+        if not encoder.link(pay):
+            print("Failed to link encoder to pay")
 
         return pipeline
 
     def on_pad_added(self, src, new_pad, depay):
-        # Link dynamically added rtspsrc pad to the depayloader
+        # Dynamically link the rtspsrc's pad to the depayloader sink pad
         sink_pad = depay.get_static_pad("sink")
         if not sink_pad.is_linked():
-            new_pad.link(sink_pad)
+            result = new_pad.link(sink_pad)
+            if result != Gst.PadLinkReturn.OK:
+                print("Failed to link pads!")
+            else:
+                print("Pads linked successfully.")
 
 class Server:
     def __init__(self, input_uri, output_port):
@@ -60,7 +70,7 @@ class Server:
         
         # Set up the relay factory
         relay_factory = RTSPRelayServer(input_uri)
-        mount_points = self.server.get_mount_points()
+        self.server.attach(GObject.MainContext.default())
         mount_points.add_factory("/relay", relay_factory)
 
         # Attach the server
@@ -68,8 +78,8 @@ class Server:
         print(f"RTSP server is streaming at rtsp://127.0.0.1:{output_port}/relay")
 
 if __name__ == "__main__":
-    # Define input RTSP stream URL and desired output port
-    input_uri = "rtsp://your_rtsp_source_here"
+    # Use the provided input RTSP stream URL and desired output port
+    input_uri = "rtsp://EdgeCam:EdgeCam@192.168.2.11:554/stream1"
     output_port = 8554
 
     # Start main loop
