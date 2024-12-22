@@ -1,0 +1,6 @@
+
+train: /home/kobe/Desktop/Peppernet/Data/images/train
+val: /home/kobe/Desktop/Peppernet/Data/images/val
+test: /home/kobe/Desktop/Peppernet/Data/images/test
+nc: 11
+names: ['Habanero_Pepper_Red', 'Jalapeno_Green', 'Leon_Orange', 'Pick_up', 'Rawit_Green', 'Rawit_Red', 'Spanish_Pepper_Green', 'Spanish_Pepper_Red', 'Spanish_Pepper_Yellow', 'Sweet_Pepper_Orange', 'Sweet_Pepper_Yellow']
